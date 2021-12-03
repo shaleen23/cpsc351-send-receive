@@ -1,6 +1,4 @@
 #include "msg.h" /* For the message struct */
-#include <fstream>
-#include <iostream>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,13 +29,12 @@ string recvFileName() {
     /* TODO: declare an instance of the fileNameMsg struct to be
      * used for holding the message received from the sender.
      */
-    struct fileNameMsg message;
+    struct fileNameMsg msg;
 
     /* TODO: Receive the file name using msgrcv() */
     msgrcv(msqid, &fileName, sizeof(fileName), 1, 0);
 
     /* TODO: return the received file name */
-    cout << "File name: " << fileName << endl;
     return fileName;
 }
 /**
@@ -59,27 +56,21 @@ void init(int &shmid, int &msqid, void *&sharedMemPtr) {
     Every System V object on the system has a unique id, but different objects
     may have the same key.
     */
-    ofstream file;
-    file.open("keyfile.txt");
-    file << "Hello world\n";
-    file.close();
-
     key_t key = ftok("keyfile.txt", 'a');
-
-    cout << "Key: " << key << endl;
 
     /* TODO: Allocate a shared memory segment. The size of the segment must be
      * SHARED_MEMORY_CHUNK_SIZE. */
-    shmid = shmget(key, SHARED_MEMORY_CHUNK_SIZE, 0666 | IPC_CREAT);
+    shmid = shmget(key, SHARED_MEMORY_CHUNK_SIZE, 0666);
 
     /* TODO: Attach to the shared memory */
     sharedMemPtr = shmat(shmid, NULL, 0);
 
     /* TODO: Create a message queue */
-    msqid = msgget(key, 0666 | IPC_CREAT);
+    msqid = msgget(key, 0666);
 
     /* TODO: Store the IDs and the pointer to the shared memory region in the
      * corresponding parameters */
+    printf("Everything initialized!\n");
 }
 
 /**
@@ -98,7 +89,7 @@ unsigned long mainLoop(const char *fileName) {
     string recvFileNameStr = fileName;
 
     /* TODO: append __recv to the end of file name */
-    recvFileNameStr += "__recv";
+    recvFileNameStr.append("__recv");
 
     /* Open the file for writing */
     FILE *fp = fopen(recvFileNameStr.c_str(), "w");
@@ -112,6 +103,7 @@ unsigned long mainLoop(const char *fileName) {
     /* Keep receiving until the sender sets the size to 0, indicating that
      * there is no more data to send.
      */
+    msgSize = 1;
     while (msgSize != 0) {
 
         /* TODO: Receive the message and get the value of the size field. The
@@ -127,14 +119,14 @@ unsigned long mainLoop(const char *fileName) {
          * file is song.mp3, the name of the received file is going to be
          * song.mp3__recv.
          */
-        msgrcv(msqid, &msgSize, sizeof(msgSize), SENDER_DATA_TYPE, 0);
-
+        message rcv;
+        rcv.mtype = SENDER_DATA_TYPE;
+        msgrcv(msqid, &rcv, sizeof(rcv) - sizeof(long), SENDER_DATA_TYPE, 0);
+        msgSize = rcv.size;
         /* If the sender is not telling us that we are done, then get to work */
         if (msgSize != 0) {
             /* TODO: record the number of bytes received */
             numBytesRecv += msgSize;
-
-            cout << "Bytes received: " << numBytesRecv << endl;
 
             /* Capitalize each letter of the text file and write
              * the resulting content into the file the data in shared memory
@@ -144,17 +136,19 @@ unsigned long mainLoop(const char *fileName) {
                 *((char *)sharedMemPtr + i) =
                     toupper(*((char *)sharedMemPtr + i));
             }
-            cout << "Capitalized: " << *((char *)sharedMemPtr) << endl;
+
+            printf("Capitalized each letter!\n");
 
             /* TODO: Tell the sender that we are ready for the next
              * set of bytes.  I.e., send a message of type RECV_DONE_TYPE. That
              * is, a message of type ackMessage with mtype field set to
              * RECV_DONE_TYPE.
              */
-            ackMessage ack;
-            ack.mtype = RECV_DONE_TYPE;
-            msgsnd(msqid, &ack, sizeof(ack), 0);
-            cout << "Message ready" << endl;
+            message snd;
+            snd.mtype = RECV_DONE_TYPE;
+            msgsnd(msqid, &snd, sizeof(snd) - sizeof(long), 0);
+            printf("Msg sent!\n");
+            msgSize = 0;
         }
         /* We are done */
         else {
@@ -175,12 +169,15 @@ unsigned long mainLoop(const char *fileName) {
 void cleanUp(const int &shmid, const int &msqid, void *sharedMemPtr) {
     /* TODO: Detach from shared memory */
     shmdt(sharedMemPtr);
+    printf("Detached from shared memory\n");
 
     /* TODO: Deallocate the shared memory segment */
     shmctl(shmid, IPC_RMID, NULL);
+    printf("Deallocated shared memory chunk\n");
 
     /* TODO: Deallocate the message queue */
     msgctl(msqid, IPC_RMID, NULL);
+    printf("Deallocated message queue\n");
 }
 
 /**
@@ -199,7 +196,6 @@ int main(int argc, char **argv) {
      * queue and the shared memory segment before exiting. You may add
      * the cleaning functionality in ctrlCSignal().
      */
-    signal(SIGINT, ctrlCSignal);
 
     /* Initialize */
     init(shmid, msqid, sharedMemPtr);
@@ -215,6 +211,8 @@ int main(int argc, char **argv) {
      * and message queue (i.e. call cleanup)
      */
     cleanUp(shmid, msqid, sharedMemPtr);
+    printf("Detached from shared mem seg, deallocated shared memory, "
+           "deallocated message queue\n");
 
     return 0;
 }

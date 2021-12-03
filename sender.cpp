@@ -1,5 +1,4 @@
 #include "msg.h" /* For the message struct */
-#include <fstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,7 +6,6 @@
 #include <sys/shm.h>
 #include <unistd.h>
 
-using namespace std;
 
 /* The size of the shared memory segment */
 #define SHARED_MEMORY_CHUNK_SIZE 1000
@@ -35,15 +33,11 @@ void init(int &shmid, int &msqid, void *&sharedMemPtr) {
     Every System V object on the system has a unique id, but different objects
     may have the same key.
     */
-   ofstream file;
-   file.open("keyfile.txt");
-   file << "Hello world\n";
-
    key_t key = ftok("keyfile.txt", 'a');
 
     /* TODO: Get the id of the shared memory segment. The size of the segment
      * must be SHARED_MEMORY_CHUNK_SIZE */
-	shmid = shmget(key, SHARED_MEMORY_CHUNK_SIZE, 0666 | IPC_CREAT);
+	shmid = shmget(key, SHARED_MEMORY_CHUNK_SIZE, 0666);
 
     /* TODO: Attach to the shared memory */
 	sharedMemPtr = shmat(shmid, NULL, 0);
@@ -51,7 +45,9 @@ void init(int &shmid, int &msqid, void *&sharedMemPtr) {
     /* TODO: Attach to the message queue */
     /* Store the IDs and the pointer to the shared memory region in the
      * corresponding function parameters */
-	msqid = msgget(key, 0666 | IPC_CREAT);
+	msqid = msgget(key, 0666);
+
+	printf("Everything initialized!\n");
 }
 
 /**
@@ -63,6 +59,8 @@ void init(int &shmid, int &msqid, void *&sharedMemPtr) {
 void cleanUp(const int &shmid, const int &msqid, void *sharedMemPtr) {
     /* TODO: Detach from shared memory */
 	shmdt(sharedMemPtr);
+
+	printf("Detached from memory!\n");
 }
 
 /**
@@ -106,14 +104,15 @@ unsigned long sendFile(const char *fileName) {
         /* TODO: Send a message to the receiver telling him that the data is
          * ready to be read (message of type SENDER_DATA_TYPE).
          */
-
 		sndMsg.mtype = SENDER_DATA_TYPE;
-		msgsnd(msqid, &sndMsg, sndMsg.size, 0);
+        msgsnd(msqid, &sndMsg, sizeof(sndMsg) - sizeof(long), 0);
+
+		printf("Sent message!\n");
 
         /* TODO: Wait until the receiver sends us a message of type
          * RECV_DONE_TYPE telling us that he finished saving a chunk of memory.
          */
-		msgrcv(msqid, &rcvMsg, sizeof(rcvMsg), RECV_DONE_TYPE, 0);
+		msgrcv(msqid, &rcvMsg, sizeof(rcvMsg) - sizeof(long), RECV_DONE_TYPE, 0);
     }
 
     /** TODO: once we are out of the above loop, we have finished sending the
@@ -121,6 +120,7 @@ unsigned long sendFile(const char *fileName) {
      * do this by sending a message of type SENDER_DATA_TYPE with size field set
      * to 0.
      */
+	sndMsg.mtype = SENDER_DATA_TYPE;
 	msgsnd(msqid, &sndMsg, 0, 0);
 
     /* Close the file */
@@ -141,24 +141,25 @@ void sendFileName(const char *fileName) {
      * the maximum buffer size in the fileNameMsg
      * struct. If exceeds, then terminate with an error.
      */
-	if(fileNameSize > MAX_FILE_NAME_SIZE) {
-		printf("error");
-		exit(-1);
-	}
+	if (fileNameSize > MAX_FILE_NAME_SIZE) {
+        printf("error");
+        exit(-1);
+    }
 
     /* TODO: Create an instance of the struct representing the message
      * containing the name of the file.
      */
-	fileNameMsg sndMsg;
+	fileNameMsg msg;
 
     /* TODO: Set the message type FILE_NAME_TRANSFER_TYPE */
-	sndMsg.mtype = FILE_NAME_TRANSFER_TYPE;
+	msg.mtype = FILE_NAME_TRANSFER_TYPE;
 
     /* TODO: Set the file name in the message */
-	strcpy(sndMsg.fileName, fileName);
+	strcpy(msg.fileName, fileName);
 
     /* TODO: Send the message using msgsnd */
-	msgsnd(msqid, &sndMsg, sizeof(sndMsg), 0);
+	msgsnd(msqid, &msg, sizeof(msg) - sizeof(long), 0);
+	printf("Msg sent!\n");
 }
 
 int main(int argc, char **argv) {
@@ -180,6 +181,7 @@ int main(int argc, char **argv) {
 
     /* Cleanup */
     cleanUp(shmid, msqid, sharedMemPtr);
+	printf("Cleaned up!\n");
 
     return 0;
 }
