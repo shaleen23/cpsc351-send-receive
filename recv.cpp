@@ -6,6 +6,7 @@
 #include <sys/msg.h>
 #include <sys/shm.h>
 #include <unistd.h>
+#include <iostream>
 
 using namespace std;
 
@@ -99,13 +100,11 @@ unsigned long mainLoop(const char *fileName) {
         perror("fopen");
         exit(-1);
     }
-
     /* Keep receiving until the sender sets the size to 0, indicating that
      * there is no more data to send.
      */
     msgSize = 1;
     while (msgSize != 0) {
-
         /* TODO: Receive the message and get the value of the size field. The
          * message will be of of type SENDER_DATA_TYPE. That is, a message that
          * is an instance of the message struct with mtype field set to
@@ -132,6 +131,8 @@ unsigned long mainLoop(const char *fileName) {
              * the resulting content into the file the data in shared memory
              * (that was put there by the sender)
              */
+
+            // TAKE A LOOK
             for (int i = 0; i < msgSize; i++) {
                 *((char *)sharedMemPtr + i) =
                     toupper(*((char *)sharedMemPtr + i));
