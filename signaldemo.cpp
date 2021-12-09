@@ -1,4 +1,4 @@
-/** This program illustrates a simple signal handler
+/** This program illustrates a simple signal handler 
  * for the case where the user presses Ctrl-C. Test
  * it by running it and pressing Ctrl-C.
  */
@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-/* The counter which counts the number
+/* The counter which counts the number 
  * of times the user pressed Ctrl-C
  */
 int count = 9;
@@ -16,41 +16,47 @@ int count = 9;
  * This function handles the singnal
  * @param arg - the signal number
  */
-void signalHandlerFunc(int arg) {
-    fprintf(stderr, "Got signal %d\n", arg);
-
-    /* We can take more Ctrl-Cs */
-    if (count > 0)
-        fprintf(stderr, "Haha I have %d lives!\n", count);
-    else {
-        fprintf(stderr, "Ahh you got me!\n");
-        exit(0);
-    }
-
-    --count;
+void signalHandlerFunc(int arg)
+{
+	fprintf(stderr, "Got signal %d\n", arg);
+	
+	/* We can take more Ctrl-Cs */
+	if(count > 0)
+		fprintf(stderr, "Haha I have %d lives!\n", count);
+	else
+	{
+		fprintf(stderr, "Ahh you got me!\n");
+		exit(0);
+	}
+	
+	--count;
 }
 
 /**
  * The signal handler for SIGSTOP
  * @param arg - the signal number
  */
-void sigstopHandler(int arg) {
-    fprintf(stderr, "Hi there, got your signal! %d\n", arg);
+void sigstopHandler(int arg)
+{
+	fprintf(stderr, "Hi there, got your signal! %d\n", arg);
 }
 
-int main() {
-    /* Overide the default signal handler for the
-     * SIGINT signal with signalHandlerFunc
-     */
-    signal(SIGINT, signalHandlerFunc);
+int main()
+{
+	/* Overide the default signal handler for the
+	 * SIGINT signal with signalHandlerFunc
+	 */
+	signal(SIGINT, signalHandlerFunc); 
 
-    /* Override the signal handler for SIGSTOP */
-    signal(SIGSTOP, sigstopHandler);
-
-    /* Spin the loop forever */
-    for (;;) {
-        sleep(1);
-    }
-
-    return 0;
+	/* Override the signal handler for SIGSTOP */
+	signal(SIGSTOP, sigstopHandler);
+	
+	/* Spin the loop forever */
+	for(;;)
+	{
+		sleep(1);
+	}
+	
+	return 0;
 }
+
