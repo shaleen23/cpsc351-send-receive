@@ -149,7 +149,7 @@ void sendFileName(const char *fileName) {
     /* TODO: Create an instance of the struct representing the message
      * containing the name of the file.
      */
-	fileNameMsg msg;
+	fileNameMsg msg = fileNameMsg();
 
     /* TODO: Set the message type FILE_NAME_TRANSFER_TYPE */
 	msg.mtype = FILE_NAME_TRANSFER_TYPE;

@@ -1,4 +1,5 @@
 #include "msg.h" /* For the message struct */
+#include <iostream>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,7 +7,6 @@
 #include <sys/msg.h>
 #include <sys/shm.h>
 #include <unistd.h>
-#include <iostream>
 
 using namespace std;
 
@@ -30,7 +30,7 @@ string recvFileName() {
     /* TODO: declare an instance of the fileNameMsg struct to be
      * used for holding the message received from the sender.
      */
-    struct fileNameMsg msg;
+    fileNameMsg msg = fileNameMsg();
 
     /* TODO: Receive the file name using msgrcv() */
     msgrcv(msqid, &fileName, sizeof(fileName), 1, 0);
