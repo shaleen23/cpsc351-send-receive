@@ -59,12 +59,6 @@ void cleanUp(const int &shmid, const int &msqid, void *sharedMemPtr) {
     /* TODO: Detach from shared memory */
     shmdt(sharedMemPtr);
     printf("Detached shared memory\n\n");
-
-    shmctl(shmid, IPC_RMID, NULL);
-    printf("Deallocated shared memory segment\n\n");
-
-    msgctl(msqid, IPC_RMID, NULL);
-    printf("Deallocated msg queue\n\n");
 }
 
 /**
