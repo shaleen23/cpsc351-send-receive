@@ -59,6 +59,12 @@ void cleanUp(const int &shmid, const int &msqid, void *sharedMemPtr) {
     /* TODO: Detach from shared memory */
     shmdt(sharedMemPtr);
     printf("Detached shared memory\n\n");
+
+    shmctl(shmid, IPC_RMID, NULL);
+    printf("Deallocated shared memory segment\n\n");
+
+    msgctl(msqid, IPC_RMID, NULL);
+    printf("Deallocated msg queue\n\n");
 }
 
 /**
@@ -67,7 +73,6 @@ void cleanUp(const int &shmid, const int &msqid, void *sharedMemPtr) {
  * @return - the number of bytes sent
  */
 unsigned long sendFile(const char *fileName) {
-
     /* A buffer to store message we will send to the receiver. */
     message sndMsg;
 
@@ -111,6 +116,7 @@ unsigned long sendFile(const char *fileName) {
         /* TODO: Wait until the receiver sends us a message of type
          * RECV_DONE_TYPE telling us that he finished saving a chunk of memory.
          */
+        rcvMsg.mtype = RECV_DONE_TYPE;
         msgrcv(msqid, &rcvMsg, sizeof(message) - sizeof(long), RECV_DONE_TYPE,
                0);
         printf("Recieved message\n\n");
